@@ -1,61 +1,130 @@
 <template>
-  <div id="app">
-    <div>
-      <button>fetch Api</button>
-    </div>
-    <p>
-    <div>
-      <input type="text" v-model="formData">
-      <button @click="insert">Insert</button>
-    </div>
-    <p>
-
-    <div>
-      <table border="1">
-        <thead>
-<th>
-          <td>id</td>
-          <td>name</td>
-          <td>age</td>
-        </th>
-        </thead>
-        
-        <tbody>
-          <tr>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <b-form id="app" class="container">
+    <b-form-group>
+      <b-button variant="outline-primary" @click="fetchData"
+        >Fetch Api</b-button
+      >
+    </b-form-group>
+    <b-form-row class="d-flex justify-content-center mb-5">
+      <div>
+        <b-form-input v-model="formData" trim></b-form-input>
+      </div>
+      <div>
+        <b-button @click="insert" variant="success">Insert</b-button>
+      </div>
+    </b-form-row>
+    <b-form-group>
+      <b-table hover :items="items">
+        <template #table-busy>
+          <div class="text-center text-danger my-2">
+            <b-spinner class="align-middle"></b-spinner>
+            <strong>Loading...</strong>
+          </div>
+        </template>
+        <template #cell(active)="row">
+          <b-icon-check-square-fill
+            v-if="row.item.active"
+          ></b-icon-check-square-fill>
+          <b-icon-check-square
+            v-else-if="!row.item.active"
+          ></b-icon-check-square>
+        </template>
+        <template #cell(timestamp)="row">
+          {{ row.item.timestamp }}
+          <b-row class="d-flex justify-content-center">
+            <b-button
+              :variant="row.item.active ? 'info' : 'warning'"
+              @click="updateData(row.item)"
+              >{{ row.item.active }}</b-button
+            >
+            <b-button
+              class="ml-2"
+              variant="danger"
+              @click="deleteItem(row.item)"
+              >delete</b-button
+            >
+          </b-row>
+        </template>
+      </b-table>
+    </b-form-group>
+  </b-form>
 </template>
 
 <script>
 import aws from "./connectDB.js";
+const TABLE = "table_user";
 export default {
   name: "App",
   data() {
     return {
       formData: "",
+      items: [],
     };
   },
   methods: {
     async insert() {
-      console.log('test insert');
+      console.log("test insert");
       const data = {
-        userId: "U000"+Math.floor(Math.random(1000)*1000),
+        userId: "1234",
         timestamp: new Date().valueOf(),
-        name: this.formData
+        name: this.formData,
+        active: false,
       };
       let params = {
-        TableName: "table_user",
+        TableName: TABLE,
         Item: data,
       };
       await aws.docClient.put(params).promise();
-      alert("create success");
+      this.fetchData();
+      this.$bvToast.toast("Insert Success", {
+        title: `Insert Success`,
+        variant: "success",
+        solid: true,
+      });
     },
-    getData(){
-    }
+    async fetchData() {
+      let params = {
+        TableName: TABLE,
+        KeyConditionExpression: "userId = :userId",
+        ExpressionAttributeValues: { ":userId": "1234" },
+      };
+      let data = await aws.docClient.query(params).promise();
+      this.items = data.Items;
+    },
+    async deleteItem(items) {
+      const params = {
+        TableName: TABLE,
+        Key: {
+          userId: items.userId,
+          timestamp: items.timestamp,
+        },
+      };
+      await aws.docClient.delete(params).promise();
+      this.fetchData();
+      this.$bvToast.toast("Delete Success", {
+        title: `Delete Success`,
+        variant: "danger",
+        solid: true,
+      });
+    },
+    async updateData(items) {
+      let data = {
+        ...items,
+        active: !items.active,
+      };
+      const params = {
+        TableName: TABLE,
+        Item: data,
+      };
+
+      await aws.docClient.put(params).promise();
+      this.fetchData();
+      this.$bvToast.toast("Update Success", {
+        title: `Update Success`,
+        variant: "success",
+        solid: true,
+      });
+    },
   },
 };
 </script>
@@ -69,7 +138,10 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
 }
-table {
-  margin: auto;
+.table {
+  width: 100%;
+}
+td {
+  border: 0;
 }
 </style>
