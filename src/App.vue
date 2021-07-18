@@ -1,19 +1,63 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <div>
+      <button>fetch Api</button>
+    </div>
+    <p>
+    <div>
+      <input type="text" v-model="formData">
+      <button @click="insert">Insert</button>
+    </div>
+    <p>
+
+    <div>
+      <table border="1">
+        <thead>
+<th>
+          <td>id</td>
+          <td>name</td>
+          <td>age</td>
+        </th>
+        </thead>
+        
+        <tbody>
+          <tr>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
+import aws from "./connectDB.js";
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+  name: "App",
+  data() {
+    return {
+      formData: "",
+    };
+  },
+  methods: {
+    async insert() {
+      console.log('test insert');
+      const data = {
+        userId: "U000"+Math.floor(Math.random(1000)*1000),
+        timestamp: new Date().valueOf(),
+        name: this.formData
+      };
+      let params = {
+        TableName: "table_user",
+        Item: data,
+      };
+      await aws.docClient.put(params).promise();
+      alert("create success");
+    },
+    getData(){
+    }
+  },
+};
 </script>
 
 <style>
@@ -24,5 +68,8 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+table {
+  margin: auto;
 }
 </style>
